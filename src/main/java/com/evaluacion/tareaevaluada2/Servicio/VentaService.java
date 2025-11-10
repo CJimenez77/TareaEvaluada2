@@ -48,26 +48,32 @@ public class VentaService {
     @Transactional
     public VentaResponse confirmarVenta(List<ItemVentaRequest> items) {
 
-        // 1. Calcular el total (reutilizamos la lógica de cotización)
         double totalVenta = calcularCotizacion(items);
 
-        // 2. Verificar y descontar stock
+        // --- FASE 1: VERIFICACIÓN (PRE-CHECK) ---
+        // Primero, verificamos que tengamos stock para TODO el pedido.
         for (ItemVentaRequest item : items) {
             Mueble mueble = muebleRepository.findById(item.getMuebleId())
                     .orElseThrow(() -> new RuntimeException("Mueble no encontrado"));
 
             if (mueble.getStock() < item.getCantidad()) {
+                // Si UNO falla, lanzamos la excepción. @Transactional
+                // se encargará de que NADA se guarde.
                 throw new RuntimeException("Stock insuficiente para: " + mueble.getNombreMueble());
             }
-
-            // Descontar stock
-            mueble.setStock(mueble.getStock() - item.getCantidad());
-            muebleRepository.save(mueble);
         }
 
-        // (Aquí se guardaría la entidad Venta, si la tuviéramos)
+        // --- FASE 2: APLICACIÓN (COMMIT) ---
+        // Si llegamos aquí, es porque hay stock de todo.
+        // Ahora sí, descontamos y guardamos.
+        for (ItemVentaRequest item : items) {
+            // Volvemos a buscarlo (está en la caché de la transacción, es rápido)
+            Mueble mueble = muebleRepository.findById(item.getMuebleId()).get();
 
-        // 3. Devolver una respuesta DTO
+            mueble.setStock(mueble.getStock() - item.getCantidad());
+            muebleRepository.save(mueble); // <-- Ahora save() solo se llama si TODO es válido
+        }
+
         return new VentaResponse("Venta confirmada exitosamente", totalVenta);
     }
 }
