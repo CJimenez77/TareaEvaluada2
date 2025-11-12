@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale; // Importar Locale
+import java.util.Optional; // Importar Optional
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
@@ -30,12 +32,15 @@ public class InterfazConsola implements CommandLineRunner {
     @Autowired
     private VentaService ventaService;
 
-    // Scanner para leer la entrada del usuario
-    private Scanner scanner = new Scanner(System.in);
+    // Arreglo 1: Forzar el Scanner a usar '.' para decimales
+    private Scanner scanner = new Scanner(System.in).useLocale(Locale.US);
+
+    // Arreglo 2: Variable para "recordar" la última cotización
+    private List<ItemVentaRequest> ultimaCotizacion = null;
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("--- ¡Bienvenido a la Mueblería Hermanos S.A.! ---");
+        System.out.println("--- ¡Bienvenido a la Mueblería Los Muebles Hermanos S.A.! ---");
 
         while (true) {
             imprimirMenu();
@@ -115,11 +120,11 @@ public class InterfazConsola implements CommandLineRunner {
 
         System.out.print("Precio Base (ej: 100.0): ");
         dto.setPrecio_base(scanner.nextDouble());
-        scanner.nextLine(); // <-- ARREGLO 1: Limpiar buffer
+        scanner.nextLine();
 
         System.out.print("Stock inicial: ");
         dto.setStock(scanner.nextInt());
-        scanner.nextLine(); // <-- ARREGLO 2: Limpiar buffer
+        scanner.nextLine();
 
         MuebleDto muebleCreado = muebleService.crearMueble(dto); //
         System.out.println("¡Mueble creado exitosamente! ID: " + muebleCreado.getId()); //
@@ -147,7 +152,6 @@ public class InterfazConsola implements CommandLineRunner {
             System.out.println("No hay muebles registrados.");
             return;
         }
-        // Imprime la lista usando el .toString() de Lombok
         muebles.forEach(System.out::println);
     }
 
@@ -171,38 +175,50 @@ public class InterfazConsola implements CommandLineRunner {
         System.out.println("Mueble desactivado: " + mueble.getNombre() + ", Estado: " + mueble.getEstado()); //
     }
 
-    // --- Métodos de Venta y Cotización ---
-
     private void crearCotizacion() {
         System.out.println("--- Nueva Cotización ---");
         List<ItemVentaRequest> items = crearListaDeItems();
         if (items.isEmpty()) {
             System.out.println("Cotización cancelada.");
+            this.ultimaCotizacion = null; // Limpiamos por si acaso
             return;
         }
+
+        // Corregido: Llamar a calcularCotizacion
         double total = ventaService.calcularCotizacion(items); //
         System.out.printf("El total de la cotización es: $%.2f%n", total);
+
+        // Guardamos la cotización para la venta
+        this.ultimaCotizacion = items;
+        System.out.println("Cotización guardada. Use la opción 7 para confirmarla.");
     }
 
     private void confirmarVenta() {
-        System.out.println("--- Nueva Venta ---");
-        List<ItemVentaRequest> items = crearListaDeItems();
-        if (items.isEmpty()) {
-            System.out.println("Venta cancelada.");
+        System.out.println("--- Confirmar Venta ---");
+
+        if (this.ultimaCotizacion == null || this.ultimaCotizacion.isEmpty()) {
+            System.out.println("Error: No hay ninguna cotización pendiente.");
+            System.out.println("Por favor, cree una cotización primero (Opción 6).");
             return;
         }
 
-        // El servicio de venta ya calcula el total
-        VentaResponse respuesta = ventaService.confirmarVenta(items); //
+        System.out.println("Se encontró una cotización pendiente. ¿Desea confirmarla? (S/N)");
+        String confirmacion = scanner.nextLine().toUpperCase();
 
-        System.out.println("¡Venta Exitosa!");
-        System.out.println("Mensaje: " + respuesta.getMensaje()); //
-        System.out.printf("Total Pagado: $%.2f%n", respuesta.getTotalPagado()); //
+        if (confirmacion.equals("S")) {
+            VentaResponse respuesta = ventaService.confirmarVenta(this.ultimaCotizacion); //
+
+            System.out.println("¡Venta Exitosa!");
+            System.out.println("Mensaje: " + respuesta.getMensaje()); //
+            System.out.printf("Total Pagado: $%.2f%n", respuesta.getTotalPagado()); //
+
+            this.ultimaCotizacion = null;
+
+        } else {
+            System.out.println("Venta cancelada. La cotización sigue pendiente.");
+        }
     }
 
-    /**
-     * Helper reutilizable para crear la lista de items para Cotización y Venta.
-     */
     private List<ItemVentaRequest> crearListaDeItems() {
         List<ItemVentaRequest> items = new ArrayList<>();
         while (true) {
@@ -212,6 +228,17 @@ public class InterfazConsola implements CommandLineRunner {
             if (muebleId == 0) {
                 break;
             }
+
+            // Arreglo 3: Validar el ID del mueble
+            Optional<MuebleDto> muebleOpt = muebleService.obtenerMueblePorId(muebleId); //
+
+            if (muebleOpt.isEmpty()) {
+                System.out.println("Error: No se encontró ningún mueble con el ID: " + muebleId);
+                System.out.println("Por favor, intente de nuevo.");
+                continue; // Vuelve a pedir el ID
+            }
+
+            System.out.println("Mueble encontrado: " + muebleOpt.get().getNombre()); //
 
             System.out.print("Ingrese Cantidad: ");
             int cantidad = scanner.nextInt();
