@@ -10,10 +10,10 @@ import java.util.List;
 public class VarianteService {
 
     @Autowired
-    private VarianteRepository varianteRepository; //
+    private VarianteRepository varianteRepository;
 
     public Variante crearVariante(Variante variante) {
-        return varianteRepository.save(variante); //
+        return varianteRepository.save(variante);
     }
 
     public List<Variante> listarVariantes() {

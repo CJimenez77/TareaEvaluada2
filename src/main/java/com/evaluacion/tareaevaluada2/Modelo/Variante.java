@@ -12,16 +12,16 @@ public class Variante {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nombre; // Ej: "Barniz premium", "Ruedas"
+    private String nombre;
 
     @Enumerated(EnumType.STRING)
-    private TipoVariante tipo; // Ej: PORCENTAJE, SUMA_FIJA
+    private TipoVariante tipo;
 
-    private Double valor; // Ej: 0.15 (para 15%) o 20.0 (para $20)
+    private Double valor;
 
-    // Define cómo se calcula la variante
+
     public enum TipoVariante {
-        SUMA_FIJA,    // Ej: +$20
-        PORCENTAJE    // Ej: +15%
+        SUMA_FIJA,
+        PORCENTAJE
     }
 }

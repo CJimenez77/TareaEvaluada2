@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale; // Importar Locale
-import java.util.Optional; // Importar Optional
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
@@ -32,15 +32,13 @@ public class InterfazConsola implements CommandLineRunner {
     @Autowired
     private VentaService ventaService;
 
-    // Arreglo 1: Forzar el Scanner a usar '.' para decimales
     private Scanner scanner = new Scanner(System.in).useLocale(Locale.US);
 
-    // Arreglo 2: Variable para "recordar" la última cotización
     private List<ItemVentaRequest> ultimaCotizacion = null;
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("--- ¡Bienvenido a la Mueblería Los Muebles Hermanos S.A.! ---");
+        System.out.println("--- ¡Bienvenido a la Mueblería Hermanos S.A.! ---");
 
         while (true) {
             imprimirMenu();
@@ -49,10 +47,10 @@ public class InterfazConsola implements CommandLineRunner {
                 opcion = scanner.nextInt();
             } catch (Exception e) {
                 System.out.println("Por favor, ingrese un número válido.");
-                scanner.nextLine(); // Limpiar buffer
+                scanner.nextLine();
                 continue;
             }
-            scanner.nextLine(); // Consumir el salto de línea
+            scanner.nextLine();
 
             try {
                 switch (opcion) {
@@ -79,13 +77,12 @@ public class InterfazConsola implements CommandLineRunner {
                         break;
                     case 8:
                         System.out.println("¡Hasta luego!");
-                        return; // Termina el método run y la aplicación
+                        return;
                     default:
                         System.out.println("Opción no válida. Intente de nuevo.");
                 }
             } catch (Exception e) {
                 System.out.println("Ha ocurrido un error: " + e.getMessage());
-                // e.printStackTrace(); // Descomentar para depuración
             }
 
             System.out.println("\nPresione Enter para continuar...");
@@ -139,7 +136,7 @@ public class InterfazConsola implements CommandLineRunner {
         v.setTipo(Variante.TipoVariante.valueOf(scanner.nextLine().toUpperCase())); //
         System.out.print("Valor (ej: 20.0 o 0.15): ");
         v.setValor(scanner.nextDouble());
-        scanner.nextLine(); // Limpiar buffer
+        scanner.nextLine();
 
         Variante varianteCreada = varianteService.crearVariante(v);
         System.out.println("¡Variante creada exitosamente! ID: " + varianteCreada.getId());
@@ -159,7 +156,7 @@ public class InterfazConsola implements CommandLineRunner {
         System.out.println("--- Activar Mueble ---");
         System.out.print("Ingrese el ID del mueble a activar: ");
         long id = scanner.nextLong();
-        scanner.nextLine(); // Limpiar buffer
+        scanner.nextLine();
 
         MuebleDto mueble = muebleService.activarMueble(id);
         System.out.println("Mueble activado: " + mueble.getNombre() + ", Estado: " + mueble.getEstado()); //
@@ -169,7 +166,7 @@ public class InterfazConsola implements CommandLineRunner {
         System.out.println("--- Desactivar Mueble ---");
         System.out.print("Ingrese el ID del mueble a desactivar: ");
         long id = scanner.nextLong();
-        scanner.nextLine(); // Limpiar buffer
+        scanner.nextLine();
 
         MuebleDto mueble = muebleService.desactivarMueble(id); //
         System.out.println("Mueble desactivado: " + mueble.getNombre() + ", Estado: " + mueble.getEstado()); //
@@ -180,15 +177,13 @@ public class InterfazConsola implements CommandLineRunner {
         List<ItemVentaRequest> items = crearListaDeItems();
         if (items.isEmpty()) {
             System.out.println("Cotización cancelada.");
-            this.ultimaCotizacion = null; // Limpiamos por si acaso
+            this.ultimaCotizacion = null;
             return;
         }
 
-        // Corregido: Llamar a calcularCotizacion
         double total = ventaService.calcularCotizacion(items); //
         System.out.printf("El total de la cotización es: $%.2f%n", total);
 
-        // Guardamos la cotización para la venta
         this.ultimaCotizacion = items;
         System.out.println("Cotización guardada. Use la opción 7 para confirmarla.");
     }
@@ -224,25 +219,38 @@ public class InterfazConsola implements CommandLineRunner {
         while (true) {
             System.out.print("Ingrese ID del mueble (o 0 para terminar): ");
             long muebleId = scanner.nextLong();
-            scanner.nextLine(); // Limpiar buffer
+            scanner.nextLine();
             if (muebleId == 0) {
                 break;
             }
 
-            // Arreglo 3: Validar el ID del mueble
             Optional<MuebleDto> muebleOpt = muebleService.obtenerMueblePorId(muebleId); //
 
             if (muebleOpt.isEmpty()) {
                 System.out.println("Error: No se encontró ningún mueble con el ID: " + muebleId);
                 System.out.println("Por favor, intente de nuevo.");
-                continue; // Vuelve a pedir el ID
+                continue;
             }
 
-            System.out.println("Mueble encontrado: " + muebleOpt.get().getNombre()); //
+            MuebleDto mueble = muebleOpt.get(); //
+            System.out.println("Mueble encontrado: " + mueble.getNombre()); //
+            System.out.println("Stock disponible: " + mueble.getStock()); //
 
             System.out.print("Ingrese Cantidad: ");
             int cantidad = scanner.nextInt();
-            scanner.nextLine(); // Limpiar buffer
+            scanner.nextLine();
+
+            if (cantidad <= 0) {
+                System.out.println("Error: La cantidad debe ser mayor a cero.");
+                System.out.println("Por favor, intente de nuevo.");
+                continue;
+            }
+            if (cantidad > mueble.getStock()) { //
+                System.out.println("Error: Stock insuficiente.");
+                System.out.println("Stock disponible para '" + mueble.getNombre() + "': " + mueble.getStock()); //
+                System.out.println("Por favor, intente de nuevo.");
+                continue;
+            }
 
             System.out.print("Ingrese IDs de Variantes (separados por coma, ej: 1,2) o deje vacío: ");
             String variantesInput = scanner.nextLine();

@@ -2,7 +2,7 @@ package com.evaluacion.tareaevaluada2.Modelo;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder; // Importa el patrón Builder
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

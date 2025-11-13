@@ -9,9 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class MuebleMapper {
 
-    // Convierte de Request DTO a Entidad
     public Mueble toEntity(CrearMuebleRequest dto) {
-        // ¡Usando el patrón Builder!
         return Mueble.builder()
                 .nombreMueble(dto.getNombre_mueble())
                 .tipo(dto.getTipo())
@@ -19,11 +17,10 @@ public class MuebleMapper {
                 .stock(dto.getStock())
                 .material(dto.getMaterial())
                 .tamano(Mueble.Tamano.valueOf(dto.getTamano().toUpperCase()))
-                .estado(Estado.ACTIVO) // Estado por defecto
+                .estado(Estado.ACTIVO)
                 .build();
     }
 
-    // Convierte de Entidad a Response DTO
     public MuebleDto toDTO(Mueble mueble) {
         MuebleDto dto = new MuebleDto();
         dto.setId(mueble.getIdMueble());
