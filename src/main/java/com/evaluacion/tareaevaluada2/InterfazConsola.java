@@ -77,6 +77,7 @@ public class InterfazConsola implements CommandLineRunner {
                         break;
                     case 8:
                         System.out.println("¡Hasta luego!");
+                        System.exit(0);
                         return;
                     default:
                         System.out.println("Opción no válida. Intente de nuevo.");
