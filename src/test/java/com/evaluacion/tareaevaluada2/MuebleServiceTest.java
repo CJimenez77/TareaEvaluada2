@@ -31,7 +31,7 @@ class MuebleServiceTest {
     private MuebleRepository muebleRepository;
 
     @Mock
-    private MuebleMapper muebleMapper; // Hacemos Mock del Mapper
+    private MuebleMapper muebleMapper;
 
     @InjectMocks
     private MuebleService muebleService;
@@ -42,7 +42,7 @@ class MuebleServiceTest {
 
     @BeforeEach
     void setUp() {
-        // --- Datos de Prueba ---
+
         crearRequest = new CrearMuebleRequest();
         crearRequest.setNombre_mueble("Silla Oficina");
         crearRequest.setPrecio_base(150.0);
@@ -65,12 +65,8 @@ class MuebleServiceTest {
         muebleDTO.setStock(20);
         muebleDTO.setEstado("ACTIVO");
 
-        // --- Comportamiento de Mocks ---
-
-        // Cuando se llame al mapper para convertir Request -> Entidad
         when(muebleMapper.toEntity(any(CrearMuebleRequest.class))).thenReturn(muebleEntidad);
 
-        // Cuando se llame al mapper para convertir Entidad -> DTO
         when(muebleMapper.toDTO(any(Mueble.class))).thenReturn(muebleDTO);
 
         // Comportamiento del Repositorio
@@ -89,7 +85,6 @@ class MuebleServiceTest {
         assertEquals(muebleDTO.getId(), resultado.getId());
         assertEquals("Silla Oficina", resultado.getNombre());
 
-        // Verificar que los mocks fueron llamados
         verify(muebleMapper, times(1)).toEntity(crearRequest);
         verify(muebleRepository, times(1)).save(muebleEntidad);
         verify(muebleMapper, times(1)).toDTO(muebleEntidad);
@@ -111,14 +106,13 @@ class MuebleServiceTest {
     @Test
     @DisplayName("Listar Muebles: Vacio")
     void testListarMuebles_Vacio() {
-        // Sobrescribimos el mock para este test
         when(muebleRepository.findAll()).thenReturn(Collections.emptyList());
 
         List<MuebleDto> resultados = muebleService.listarMuebles();
 
         assertTrue(resultados.isEmpty());
         verify(muebleRepository, times(1)).findAll();
-        verify(muebleMapper, never()).toDTO(any()); // Nunca debe llamarse si la lista está vacía
+        verify(muebleMapper, never()).toDTO(any());
     }
 
     @Test
@@ -147,44 +141,34 @@ class MuebleServiceTest {
     @Test
     @DisplayName("Actualizar Mueble: Exitoso")
     void testActualizarMueble_Exitoso() {
-        // 1. Datos de la solicitud de actualización
         CrearMuebleRequest requestActualizado = new CrearMuebleRequest();
         requestActualizado.setNombre_mueble("Silla Gerencial");
         requestActualizado.setPrecio_base(200.0);
         requestActualizado.setStock(5);
         requestActualizado.setTamano("GRANDE");
 
-        // Capturador para verificar la entidad que se guarda
         ArgumentCaptor<Mueble> muebleCaptor = ArgumentCaptor.forClass(Mueble.class);
 
-        // 2. Mock DTO de respuesta (¡AQUÍ ESTÁ PARTE DEL ARREGLO!)
-        //    Asegúrate de que el DTO que "devuelve" el mapper tenga TODOS los datos
         MuebleDto dtoActualizado = new MuebleDto();
         dtoActualizado.setId(1L);
         dtoActualizado.setNombre("Silla Gerencial");
-        dtoActualizado.setPrecioBase(200.0); // <-- Añade el precio al mock
+        dtoActualizado.setPrecioBase(200.0);
         dtoActualizado.setStock(5);
 
-        // Cuando el mapper convierta la Entidad (actualizada) a DTO, devolverá nuestro mock
         when(muebleMapper.toDTO(any(Mueble.class))).thenReturn(dtoActualizado);
 
-        // 3. Ejecución
         MuebleDto resultado = muebleService.actualizarMueble(1L, requestActualizado);
 
-        // 4. Verificaciones (¡AQUÍ ESTÁ LA OTRA PARTE DEL ARREGLO!)
         assertNotNull(resultado);
 
-        // ¡CORREGIDO! Compara nombre con nombre y precio con precio
         assertEquals("Silla Gerencial", resultado.getNombre());
         assertEquals(200.0, resultado.getPrecioBase());
         assertEquals(5, resultado.getStock());
 
-        // Verificar que se buscó el mueble
         verify(muebleRepository, times(1)).findById(1L);
         // Verificar que se llamó a save()
         verify(muebleRepository, times(1)).save(muebleCaptor.capture());
 
-        // Opcional: Verificar que los datos de la *entidad* que se guardó son correctos
         Mueble entidadGuardada = muebleCaptor.getValue();
         assertEquals("Silla Gerencial", entidadGuardada.getNombreMueble());
         assertEquals(200.0, entidadGuardada.getPrecioBase());
@@ -212,7 +196,6 @@ class MuebleServiceTest {
         verify(muebleRepository, times(1)).findById(1L);
         verify(muebleRepository, times(1)).save(muebleCaptor.capture());
 
-        // Verificar que el estado de la entidad guardada sea INACTIVO
         assertEquals(Estado.INACTIVO, muebleCaptor.getValue().getEstado());
     }
 }
